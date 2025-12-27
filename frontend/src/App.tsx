@@ -1,45 +1,19 @@
-import { useGreetings } from './hooks/useGreetings'
-import { Header, GreetingForm, GreetingList, WalletStatus, OnChainGreetingList } from './components'
+import { useState } from 'react'
+import { HomePage } from './pages/HomePage'
+import { GreetingsPage } from './pages/GreetingsPage'
 
 function App() {
-  const {
-    greetings,
-    onChainGreetings,
-    isLoading,
-    error,
-    account,
-    addLocalGreeting,
-    createOnChainGreeting,
-    updateOnChainGreeting,
-    refreshGreetings
-  } = useGreetings()
+  const [currentPage, setCurrentPage] = useState<'home' | 'greetings'>('home')
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-      <div className="max-w-4xl mx-auto px-4 space-y-8">
-        <Header />
-        
-        <GreetingForm
-          onLocalCreate={addLocalGreeting}
-          onChainCreate={createOnChainGreeting}
-          isConnected={!!account}
-          isLoading={isLoading}
-        />
-        
-        <OnChainGreetingList 
-          greetings={onChainGreetings}
-          onUpdate={updateOnChainGreeting}
-          onRefresh={refreshGreetings}
-          isLoading={isLoading}
-          isConnected={!!account}
-        />
-        
-        <GreetingList greetings={greetings} />
-        
-        <WalletStatus account={account} error={error} />
-      </div>
-    </div>
-  )
+  const handleNavigate = (page: 'home' | 'greetings') => {
+    setCurrentPage(page)
+  }
+
+  if (currentPage === 'greetings') {
+    return <GreetingsPage onNavigate={handleNavigate} currentPage={currentPage} />
+  }
+
+  return <HomePage onNavigate={handleNavigate} currentPage={currentPage} />
 }
 
 export default App

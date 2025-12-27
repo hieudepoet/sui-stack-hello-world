@@ -18,13 +18,20 @@
     "@mysten/wallet-adapter-wallet-standard": "^0.8.0",
     "@mysten/wallet-kit": "^0.8.6",
     "@tanstack/react-query": "^5.90.12",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.167.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@types/three": "^0.182.0",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.23",
     "eslint": "^9.25.0",

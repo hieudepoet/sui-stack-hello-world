@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { OnChainGreeting } from '../types'
+import type { OnChainGreeting } from '../../types'
+import { getExplorerUrl } from '../../utils/explorer'
 
 interface OnChainGreetingListProps {
   greetings: OnChainGreeting[]
@@ -78,10 +79,21 @@ export function OnChainGreetingList({ greetings, onUpdate, onRefresh, isLoading,
                     <p className="text-xl font-bold text-blue-900 mb-3">
                       {greeting.text}
                     </p>
-                    <div className="space-y-1">
-                      <p className="text-xs text-gray-600 font-mono">
-                        🆔 {greeting.objectId.slice(0, 10)}...{greeting.objectId.slice(-8)}
-                      </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-start gap-2">
+                        <p className="text-xs text-gray-600 font-mono truncate flex-2">
+                          🆔 {greeting.objectId.slice(0, 10)}...{greeting.objectId.slice(-8)}
+                        </p>
+                        <a
+                          href={getExplorerUrl(greeting.objectId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-1 text-xs bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors flex items-center gap-1 whitespace-nowrap"
+                        >
+                          <span>🔍</span>
+                          <span>Explorer</span>
+                        </a>
+                      </div>
                       {greeting.owner && (
                         <p className="text-xs text-gray-600 font-mono">
                           👤 {greeting.owner.slice(0, 8)}...{greeting.owner.slice(-6)}

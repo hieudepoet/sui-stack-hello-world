@@ -7,6 +7,7 @@ import type { Greeting, OnChainGreeting } from '../types'
 export function useGreetings() {
   const [greetings, setGreetings] = useState<Greeting[]>([])
   const [onChainGreetings, setOnChainGreetings] = useState<OnChainGreeting[]>([])
+  const [myOnChainGreetings, setMyOnChainGreetings] = useState<OnChainGreeting[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>()
 
@@ -14,12 +15,12 @@ export function useGreetings() {
   const suiClient = useSuiClient()
   const { mutate: signAndExecute } = useSignAndExecuteTransaction()
 
-  // Fetch shared greeting objects via events
+  // Fetch ALL shared greetings (for Global tab)
   const fetchSharedGreetings = useCallback(async () => {
     if (!config.sui.packageId) return
 
     try {
-      console.log('Fetching shared greetings...')
+      console.log('Fetching all shared greetings...')
       
       // Query for GreetingCreated events
       const response = await suiClient.queryEvents({
@@ -38,7 +39,6 @@ export function useGreetings() {
         if (event.parsedJson && typeof event.parsedJson === 'object' && 'greeting_id' in event.parsedJson) {
           const greetingId = event.parsedJson.greeting_id as string
           greetingIds.add(greetingId)
-          console.log('Found greeting ID:', greetingId)
         }
       }
 
@@ -54,13 +54,12 @@ export function useGreetings() {
             }
           })
 
-          console.log('Fetched object:', obj.data?.objectId, obj.data?.content)
-
           if (obj.data?.content && 'fields' in obj.data.content) {
             const fields = obj.data.content.fields as Record<string, unknown>
             sharedGreetings.push({
               objectId: obj.data.objectId,
               text: (fields.text as string) || '',
+              // owner: (fields.owner as string) || ''
             })
           }
         } catch (err) {
@@ -75,10 +74,83 @@ export function useGreetings() {
     }
   }, [suiClient])
 
+  // Fetch greetings created by current user (for Private tab)
+  const fetchMyGreetings = useCallback(async () => {
+    if (!account?.address || !config.sui.packageId) return
+
+    try {
+      console.log('Fetching my greetings for address:', account.address)
+      
+      // Query for GreetingCreated events filtered by sender
+      const response = await suiClient.queryEvents({
+        query: {
+          MoveEventType: `${config.sui.packageId}::greeting::GreetingCreated`,
+        },
+        limit: 50,
+        order: 'descending'
+      })
+
+      console.log('My events found:', response.data.length)
+
+      // Get greeting IDs from events created by this user
+      const myGreetingIds: string[] = []
+      for (const event of response.data) {
+        if (event.parsedJson && typeof event.parsedJson === 'object') {
+          const parsedEvent = event.parsedJson as { greeting_id?: string; creator?: string }
+          
+          // Double check creator matches current account
+          if (parsedEvent.greeting_id && parsedEvent.creator === account.address) {
+            myGreetingIds.push(parsedEvent.greeting_id)
+            console.log('Found my greeting:', parsedEvent.greeting_id)
+          }
+        }
+      }
+
+      // Fetch the actual greeting objects
+      const myGreetings: OnChainGreeting[] = []
+      for (const id of myGreetingIds) {
+        try {
+          const obj = await suiClient.getObject({
+            id,
+            options: { 
+              showContent: true,
+              showOwner: true 
+            }
+          })
+
+          if (obj.data?.content && 'fields' in obj.data.content) {
+            const fields = obj.data.content.fields as Record<string, unknown>
+            myGreetings.push({
+              objectId: obj.data.objectId,
+              text: (fields.text as string) || '',
+              // owner: (fields.owner as string) || '',
+            })
+          }
+        } catch (err) {
+          console.error(`Failed to fetch my greeting ${id}:`, err)
+        }
+      }
+
+      console.log('Total my greetings fetched:', myGreetings.length)
+      setMyOnChainGreetings(myGreetings)
+    } catch (err) {
+      console.error('Failed to fetch my greetings:', err)
+    }
+  }, [account?.address, suiClient])
+
   useEffect(() => {
-    // Fetch immediately when component mounts or account changes
+    // Fetch all greetings when component mounts
     fetchSharedGreetings()
   }, [fetchSharedGreetings])
+
+  useEffect(() => {
+    // Fetch user's greetings when account changes
+    if (account?.address) {
+      fetchMyGreetings()
+    } else {
+      setMyOnChainGreetings([])
+    }
+  }, [account?.address, fetchMyGreetings])
 
   const addLocalGreeting = (text: string) => {
     const greeting: Greeting = {
@@ -111,6 +183,7 @@ export function useGreetings() {
           // Refresh greetings after creation - wait longer for indexing
           setTimeout(() => {
             console.log('Refreshing greetings after creation...')
+            fetchMyGreetings()
             fetchSharedGreetings()
           }, 3000)
         },
@@ -147,6 +220,7 @@ export function useGreetings() {
           // Refresh greetings after update
           setTimeout(() => {
             console.log('Refreshing greetings after update...')
+            fetchMyGreetings()
             fetchSharedGreetings()
           }, 3000)
         },
@@ -161,13 +235,15 @@ export function useGreetings() {
 
   return {
     greetings,
-    onChainGreetings,
+    onChainGreetings, // All greetings (for Global tab)
+    myOnChainGreetings, // Only user's greetings (for Private tab)
     isLoading,
     error,
     account,
     addLocalGreeting,
     createOnChainGreeting,
     updateOnChainGreeting,
-    refreshGreetings: fetchSharedGreetings
+    refreshGreetings: fetchSharedGreetings,
+    refreshMyGreetings: fetchMyGreetings,
   }
 }

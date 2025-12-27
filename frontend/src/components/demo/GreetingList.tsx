@@ -1,4 +1,4 @@
-import type { Greeting } from '../types'
+import type { Greeting } from '../../types'
 
 interface GreetingListProps {
   greetings: Greeting[]
